@@ -1,13 +1,56 @@
+const game = require('./gameState');
+
 module.exports = () => {
 	let players = {},
 		onWait = [],
 		onMatch = {};
 
-	/**
-	 *
-	 * Comience aqui
-	 *
-	 */
+	const loop = setInterval(checkQueue, 5000);
+
+  function checkQueue() {
+    console
+      .info(`
+        Queues: {
+          Players: ${Object.keys(players).length},
+          OnWait: ${onWait.length},
+          OnMatch: ${Object.keys(onMatch).length}
+        }`);
+    // Print the pool values
+    while (onWait.length >= 2) {
+      console.log(`Building room...`);
+      /*
+      const p1 = players[onWait.pop()].user.name;
+      const p2 = players[onWait.pop()].user.name;
+      console.log(`We created a match for ${p1} and ${p2}`);
+      */
+      createMatch(onWait.pop(), onWait.pop());
+    }
+  }
+
+  function createMatch(p1id, p2id) {
+    const roomId = p1id + p2id;
+    players[p1id].roomId = roomId;
+    players[p2id].roomId = roomId;
+
+    if (!onMatch[roomId]) onMatch[roomId] = game.newGame({
+      players: [players[p1id], players[p2id]],
+      roomId
+    });
+
+    players[p1id].socket.emit('gameState', game.newGame({
+      players: [players[p1id], players[p2id]],
+      roomId,
+      playerId: 0,
+      opponentId: 1
+    }));
+
+    players[p2id].socket.emit('gameState', game.newGame({
+      players: [players[p1id], players[p2id]],
+      roomId,
+      playerId: 1,
+      opponentId: 0
+    }));
+  }
 
 	return {
 		// user: {socket, user}
